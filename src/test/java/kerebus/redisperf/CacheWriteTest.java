@@ -38,8 +38,8 @@ public class CacheWriteTest extends AbstractTest {
 		long diff = System.currentTimeMillis() - startTime;
 		print(CONCURRENT_CLIENTS + " clients did " + CACHE_WRITES_PER_CLIENT + " writes in " + diff + " ms.");
 		
-		double lookupsPerSecond = (CONCURRENT_CLIENTS * CACHE_WRITES_PER_CLIENT) / (diff / 1000d);
-		print("Served about " + lookupsPerSecond + " writes per second.");
+		double writesPerSecond = (CONCURRENT_CLIENTS * CACHE_WRITES_PER_CLIENT) / (diff / 1000d);
+		print("Served about " + writesPerSecond + " writes per second.");
 	}
 	
 	private void startClient(final CountDownLatch startLatch, final CountDownLatch completionCounter) {
