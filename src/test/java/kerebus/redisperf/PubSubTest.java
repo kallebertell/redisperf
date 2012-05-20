@@ -26,11 +26,10 @@ public class PubSubTest extends AbstractTest {
 			startSubscriberInNewThread(startLatch, completionCounter);
 		}
 		
-		startLatch.await();
-		
-		long startTime = System.currentTimeMillis();
-		
 		print("Publishing "+MESSAGES_TO_PUBLISH+" messages to "+SUBSCRIBER_AMOUNT+" subscribers.");
+		
+		startLatch.await();	
+		long startTime = System.currentTimeMillis();
 		
 		for (int i=0; i<MESSAGES_TO_PUBLISH; i++) {
 			jedis.publish(CHANNEL, "message"+i);			
@@ -41,7 +40,7 @@ public class PubSubTest extends AbstractTest {
 		
 		long diff = System.currentTimeMillis() - startTime;
 
-		// Tells subscriber threads to stop
+		// Poison pill to subscribers. 
 		jedis.publish(CHANNEL, "unsubscribe");			
 
 		print("Published "+MESSAGES_TO_PUBLISH+" messages and confirmed receival in "+SUBSCRIBER_AMOUNT+" subscribers in " + diff + " ms.");

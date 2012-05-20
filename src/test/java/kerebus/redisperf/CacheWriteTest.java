@@ -27,10 +27,9 @@ public class CacheWriteTest extends AbstractTest {
 			startClient(startLatch, completionCounter);
 		}
 		
-		long startTime = System.currentTimeMillis();
-		
 		print("Starting cache writing test: "+CONCURRENT_CLIENTS+" concurrent clients doing " + CACHE_WRITES_PER_CLIENT + " writes each. (" + (CONCURRENT_CLIENTS*CACHE_WRITES_PER_CLIENT) + " total writes)");
 		
+		long startTime = System.currentTimeMillis();
 		startLatch.countDown();
 		
 		print("Waiting for clients to finish writes.");

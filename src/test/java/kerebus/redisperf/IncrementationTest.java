@@ -11,13 +11,13 @@ import redis.clients.jedis.JedisPoolConfig;
 /**
  * Testing concurrent incrementation
  */
-public class ConcurrentIncrementationTest extends AbstractTest {
+public class IncrementationTest extends AbstractTest {
 
 	final static int CONCURRENT_CLIENTS = 100;
 	final static int INCREMENTATION_TIMES = 1000;
 	
 	@Test
-	public void a_lot_of_concurrent_redis_incrementing() throws Exception {
+	public void a_lot_of_concurrent_incrementing() throws Exception {
 		JedisPoolConfig config = new JedisPoolConfig();
 		config.setMaxActive(CONCURRENT_CLIENTS);
 		JedisPool pool = new JedisPool(config, getRedisHostname());
@@ -31,7 +31,7 @@ public class ConcurrentIncrementationTest extends AbstractTest {
 			new Thread(newRedisIncrementer(keyToIncrement, INCREMENTATION_TIMES, pool, startLatch, completionCounter), "Incrementer-"+i).start();
 		}
 		
-		print(CONCURRENT_CLIENTS + " clients incrementing the same key " + INCREMENTATION_TIMES + " times.");
+		print(CONCURRENT_CLIENTS + " clients incrementing the same key " + INCREMENTATION_TIMES + " times each.");
 		
 		long startTime = System.currentTimeMillis();
 		startLatch.countDown();
