@@ -38,8 +38,11 @@ public class PubSubTest extends AbstractTest {
 		completionCounter.await();
 		long diff = System.currentTimeMillis() - startTime;
 		
-		print("Published "+MESSAGES_TO_PUBLISH+" messages and confirmed receival in "+SUBSCRIBER_AMOUNT+" subscribers.");
-		print("Completed in "+diff+" ms");
+		print("Published "+MESSAGES_TO_PUBLISH+" messages and confirmed receival in "+SUBSCRIBER_AMOUNT+" subscribers in " + diff + " ms.");
+		double publishedMessagesPerSecond = MESSAGES_TO_PUBLISH / (diff/1000d);
+		print("Throughput (to confirmed delivery) with "+SUBSCRIBER_AMOUNT+" subscribers was about "+publishedMessagesPerSecond+" published messages per second.");
+		double receivedMessagesPerSecond = (MESSAGES_TO_PUBLISH * SUBSCRIBER_AMOUNT) / (diff/1000d);
+		print(receivedMessagesPerSecond+" messages received in total per second.");
 	}
 	
 	private void startSubscriberInNewThread(final CountDownLatch completionCounter) {
