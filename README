@@ -1,0 +1,8 @@
+
+
+These are some quick and dirty Redis tests I did using Java and Jedis.
+Did it mainly to learn Redis usage and to do some unscientific performance tests.
+
+To see what use cases Redis is good for, read: 
+http://highscalability.com/blog/2011/7/6/11-common-web-use-cases-solved-in-redis.html
+
