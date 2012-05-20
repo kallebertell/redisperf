@@ -19,11 +19,14 @@ public class PubSubTest extends AbstractTest {
 	public void publishing_to_subscribers() throws InterruptedException {
 		Jedis jedis = newJedisClient();
 		
+		CountDownLatch startLatch = new CountDownLatch(SUBSCRIBER_AMOUNT);
 		CountDownLatch completionCounter = new CountDownLatch(SUBSCRIBER_AMOUNT * MESSAGES_TO_PUBLISH);
 		
 		for (int i=0; i<SUBSCRIBER_AMOUNT; i++) {
-			startSubscriberInNewThread(completionCounter);
+			startSubscriberInNewThread(startLatch, completionCounter);
 		}
+		
+		startLatch.await();
 		
 		long startTime = System.currentTimeMillis();
 		
@@ -34,35 +37,43 @@ public class PubSubTest extends AbstractTest {
 		}
 		
 		print("Waiting for subscribers to receive all messages.");
-		
 		completionCounter.await();
-		long diff = System.currentTimeMillis() - startTime;
 		
+		long diff = System.currentTimeMillis() - startTime;
+
+		// Tells subscriber threads to stop
+		jedis.publish(CHANNEL, "unsubscribe");			
+
 		print("Published "+MESSAGES_TO_PUBLISH+" messages and confirmed receival in "+SUBSCRIBER_AMOUNT+" subscribers in " + diff + " ms.");
+		
 		double publishedMessagesPerSecond = MESSAGES_TO_PUBLISH / (diff/1000d);
-		print("Throughput (to confirmed delivery) with "+SUBSCRIBER_AMOUNT+" subscribers was about "+publishedMessagesPerSecond+" published messages per second.");
+		print("Throughput (to confirmed delivery) with "+SUBSCRIBER_AMOUNT+" subscribers was about " + formatDouble(publishedMessagesPerSecond) + " published messages per second.");
+		
 		double receivedMessagesPerSecond = (MESSAGES_TO_PUBLISH * SUBSCRIBER_AMOUNT) / (diff/1000d);
-		print(receivedMessagesPerSecond+" messages received in total per second.");
+		print(formatDouble(receivedMessagesPerSecond) + " messages received in total per second.");
+
+		printSeparator();
 	}
 	
-	private void startSubscriberInNewThread(final CountDownLatch completionCounter) {
+	private void startSubscriberInNewThread(final CountDownLatch startLatch, final CountDownLatch completionCounter) {
 		new Thread(new Runnable() {
 			@Override public void run() {
-				startSubscriber(completionCounter);				
+				startSubscriber(startLatch, completionCounter);				
 			}
 		}, "Subscriber-"+subscriberCounter.incrementAndGet()).start();
 	}
 	
-	private void startSubscriber(final CountDownLatch completionCounter) {
-		Jedis jedis = newJedisClient();
+	private void startSubscriber(final CountDownLatch startLatch, final CountDownLatch completionCounter) {
+		final Jedis jedis = newJedisClient();
 		
-		jedis.subscribe(new JedisPubSub() {
+		JedisPubSub pubSub = new JedisPubSub() {
 			@Override public void onUnsubscribe(String channel, int subscribedChannels) {
-				print("onPUnsubscribe on "+channel);
+				//print("onUnsubscribe on "+channel);
 			}
 			
 			@Override public void onSubscribe(String channel, int subscribedChannels) {
-				print("onSubscribe on "+channel);
+				//print("onSubscribe on "+channel);
+				startLatch.countDown();
 			}
 			
 			@Override public void onPUnsubscribe(String pattern, int subscribedChannels) {
@@ -80,10 +91,15 @@ public class PubSubTest extends AbstractTest {
 			@Override public void onMessage(String channel, String message) {
 				//print("onMessage received "+message+" on channel "+channel);
 				completionCounter.countDown();
+				
+				if (message.equalsIgnoreCase("unsubscribe")) {
+					this.unsubscribe();
+				}
 			}
 			
-		}, CHANNEL);
+		};
 		
+		jedis.subscribe(pubSub, CHANNEL);
 	}
 	
 }

@@ -16,4 +16,12 @@ public abstract class AbstractTest {
 		System.out.println(Thread.currentThread().getName() + ": " + msg);
 	}
 	
+	public static void printSeparator() {
+		System.out.println("============================================================================");
+	}
+	
+	public static String formatDouble(double unformatted) {
+		return String.format("%.2f", unformatted);
+	}
+	
 }

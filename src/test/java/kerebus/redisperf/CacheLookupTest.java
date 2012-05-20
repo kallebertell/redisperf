@@ -32,9 +32,9 @@ public class CacheLookupTest extends AbstractTest {
 			startClient(cacheKey, startLatch, completionCounter);
 		}
 		
-		long startTime = System.currentTimeMillis();
+		print(CONCURRENT_CLIENTS + " clients doing " + CACHE_LOOKUPS_PER_CLIENT + " lookups each.");
 		
-		print("Starting cache lookups.");
+		long startTime = System.currentTimeMillis();
 		startLatch.countDown();
 		
 		print("Waiting for clients to finish lookups.");
@@ -44,7 +44,9 @@ public class CacheLookupTest extends AbstractTest {
 		print(CONCURRENT_CLIENTS + " clients did " + CACHE_LOOKUPS_PER_CLIENT + " lookups each for a single cached value in " + diff + " ms.");
 		
 		double lookupsPerSecond = (CONCURRENT_CLIENTS * CACHE_LOOKUPS_PER_CLIENT) / (diff / 1000d);
-		print("Served about " + lookupsPerSecond + " lookups per second.");
+		print("Served about " + formatDouble(lookupsPerSecond) + " lookups per second.");
+		
+		printSeparator();
 	}
 	
 	private void startClient(final String key, final CountDownLatch startLatch, final CountDownLatch completionCounter) {

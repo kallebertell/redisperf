@@ -1,7 +1,6 @@
 package kerebus.redisperf;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
 
@@ -10,40 +9,12 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
 /**
- * Quick and dirty incrementation tests for redis.
- * 
- * Included a pure in vm java incrementation test for comparison. 
+ * Testing concurrent incrementation
  */
 public class ConcurrentIncrementationTest extends AbstractTest {
 
 	final static int CONCURRENT_CLIENTS = 100;
 	final static int INCREMENTATION_TIMES = 1000;
-	
-	@Test
-	public void a_lot_of_concurrent_vm_incrementing() throws Exception {
-		CountDownLatch startLatch = new CountDownLatch(1);
-		CountDownLatch completionCounter = new CountDownLatch(CONCURRENT_CLIENTS);
-				
-		AtomicLong valueToIncrement = new AtomicLong(0);
-		
-		for (int i=0; i<CONCURRENT_CLIENTS; i++) {
-			new Thread(newVmIncrementer(valueToIncrement, INCREMENTATION_TIMES, startLatch, completionCounter), "Incrementer-"+i).start();
-		}
-		
-		long startTime = System.currentTimeMillis();
-		
-		startLatch.countDown();
-		
-		System.out.println("Waiting for threads to finish.");
-		
-		completionCounter.await();
-
-		long diff = System.currentTimeMillis() - startTime;
-
-		System.out.println(CONCURRENT_CLIENTS + " concurrent clients incremented "+ INCREMENTATION_TIMES + " times each. Completed in " + diff + " ms.");
-		double incrPerSecond = (CONCURRENT_CLIENTS*INCREMENTATION_TIMES) / (diff/1000d);
-		System.out.println("So around "+incrPerSecond+" increments per second");
-	}
 	
 	@Test
 	public void a_lot_of_concurrent_redis_incrementing() throws Exception {
@@ -60,19 +31,22 @@ public class ConcurrentIncrementationTest extends AbstractTest {
 			new Thread(newRedisIncrementer(keyToIncrement, INCREMENTATION_TIMES, pool, startLatch, completionCounter), "Incrementer-"+i).start();
 		}
 		
-		long startTime = System.currentTimeMillis();
+		print(CONCURRENT_CLIENTS + " clients incrementing the same key " + INCREMENTATION_TIMES + " times.");
 		
+		long startTime = System.currentTimeMillis();
 		startLatch.countDown();
 		
-		System.out.println("Waiting for threads to finish.");
+		print("Waiting for threads to finish.");
 		
 		completionCounter.await();
 
 		long diff = System.currentTimeMillis() - startTime;
-
 		print(CONCURRENT_CLIENTS + " concurrent clients incremented '" + keyToIncrement + "' "+ INCREMENTATION_TIMES + " times each. Completed in " + diff + " ms.");
+		
 		double incrPerSecond = (CONCURRENT_CLIENTS*INCREMENTATION_TIMES) / (diff/1000d);
-		print("So around "+incrPerSecond+" increments per second");
+		print("So around " + formatDouble(incrPerSecond) + " increments per second");
+	
+		printSeparator();
 	}
 
 	private Runnable newRedisIncrementer(final String keyToIncrement, final int incrementationTimes, final JedisPool pool, final CountDownLatch startLatch, final CountDownLatch completionCounter) {
@@ -86,45 +60,14 @@ public class ConcurrentIncrementationTest extends AbstractTest {
 					Thread.currentThread().interrupt();
 				}
 				
-				print("started.");
-				
-				Long count = null;
-				
 				for (int i=0; i<incrementationTimes; i++) {
-					count = jedis.incr(keyToIncrement);	
+					jedis.incr(keyToIncrement);	
 				}
-				
-				print("finished with count == "+count);
 
 				pool.returnResource(jedis);
 				completionCounter.countDown();
 			}
 		};
-	}
-	
-	private Runnable newVmIncrementer(final AtomicLong valueToIncrement, final int incrementationTimes, final CountDownLatch startLatch, final CountDownLatch completionCounter) {
-		return new Runnable() {
-			@Override public void run() {
-				
-				try {
-					startLatch.await();
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
-				
-				print(" started.");
-				
-				Long count = null;
-				
-				for (int i=0; i<incrementationTimes; i++) {
-					count = valueToIncrement.incrementAndGet();
-				}
-				
-				print("finished with count == "+count);
-
-				completionCounter.countDown();
-			}
-		};		
 	}
 	
 	private static String generateKey() {
